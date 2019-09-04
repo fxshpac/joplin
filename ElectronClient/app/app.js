@@ -1088,6 +1088,19 @@ class Application extends BaseApplication {
 		return cssString;
 	}
 
+	async loadNoteByUuid(uuid_stripped) {
+		const note = await Note.load(uuid_stripped);
+		if (note) {
+			var log = require('electron-log');
+			log.info(note);
+			this.dispatch({
+				type: 'FOLDER_AND_NOTE_SELECT',
+				folderId: note.parent_id,
+				noteId: note.id,
+			});
+		}
+	}
+
 	async start(argv) {
 		const electronIsDev = require('electron-is-dev');
 
@@ -1220,6 +1233,15 @@ class Application extends BaseApplication {
 		window.revisionService = RevisionService.instance();
 		window.migrationService = MigrationService.instance();
 		window.decryptionWorker = DecryptionWorker.instance();
+
+		const ipcRenderer = require('electron').ipcRenderer;
+
+		ipcRenderer.on('ping', (event, uuid_stripped) => {
+			var log = require('electron-log');
+			log.info(uuid_stripped);
+			this.loadNoteByUuid(uuid_stripped);
+		});
+
 	}
 
 }

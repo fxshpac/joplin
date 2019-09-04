@@ -203,11 +203,33 @@ class ElectronAppWrapper {
 
 		// Someone tried to open a second instance - focus our window instead
 		this.electronApp_.on('second-instance', (event, commandLine, workingDirectory) => {
+
+			var uuid_stripped = "";
+
+			if (process.platform == 'win32') {
+
+				var log = require('electron-log');
+
+				const uuid = commandLine.slice(1)[0].replace("joplin://", "").replace("/", "");
+				log.info(uuid);
+
+				var validator = require('validator');
+				if (validator.isUUID(uuid, 4)) {
+					uuid_stripped = uuid.replace(/-/g, '');
+				} else {
+					log.info("Invalid uuid received");
+				}
+
+			}
+			  
 			const win = this.window();
 			if (!win) return;
 			if (win.isMinimized()) win.restore();
 			win.show();
 			win.focus();
+			if (uuid_stripped != "") {
+				win.webContents.send('ping', uuid_stripped)
+			}
 		});
 
 		return false;
@@ -220,6 +242,8 @@ class ElectronAppWrapper {
 
 		const alreadyRunning = this.ensureSingleInstance();
 		if (alreadyRunning) return;
+
+		this.electronApp_.setAsDefaultProtocolClient('joplin');
 
 		this.createWindow();
 
