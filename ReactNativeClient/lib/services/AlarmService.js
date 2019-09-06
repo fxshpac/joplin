@@ -75,7 +75,7 @@ class AlarmService {
 				if (!driver.hasPersistentNotifications() && !driver.notificationIsSet(alarm.id)) {
 					const notification = await Alarm.makeNotification(alarm, note);
 					this.logger().info('Scheduling (non-persistent) notification for note ' + note.id, notification);
-					driver.scheduleNotification(notification);
+					driver.scheduleNotification(notification, note.id);
 				}
 
 				return;
@@ -99,7 +99,8 @@ class AlarmService {
 
 			const notification = await Alarm.makeNotification(alarm, note);
 			this.logger().info('Scheduling notification for note ' + note.id, notification);
-			await driver.scheduleNotification(notification);
+
+			await driver.scheduleNotification(notification, note.id);
 		} catch (error) {
 			this.logger().error('Could not update notification', error);
 		}

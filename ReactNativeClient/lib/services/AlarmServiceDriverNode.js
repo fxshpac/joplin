@@ -22,22 +22,44 @@ class AlarmServiceDriverNode {
 		delete this.notifications_[id];
 	}
 
-	async scheduleNotification(notification) {
+	async scheduleNotification(notification, note_id) {
+
+		const log = require('electron-log');
+		const uuid = note_id.slice(0, 8) + '-' + note_id.slice(8, 12) + '-' + note_id.slice(12, 16) + '-' + note_id.slice(16, 20) + '-' + note_id.slice(20);
+
 		const now = Date.now();
 		const interval = notification.date.getTime() - now;
 		if (interval < 0) return;
-
+		
 		if (isNaN(interval)) {
 			throw new Error('Trying to create a notification from an invalid object: ' + JSON.stringify(notification));
 		}
 
 		const timeoutId = setTimeout(() => {
-			const o = {
-				appName: this.appName_,
-				title: notification.title,
-			};
-			if ('body' in notification) o.message = notification.body;
-			notifier.notify(o);
+
+			const open = require('open');
+
+			if ('body' in notification) {
+				notifier.notify({
+					title: notification.title,
+					message: notification.body,
+					sound: true,
+					wait: true
+				}, function () {
+					log.info("Opening joplin://" + uuid);
+					open("joplin://" + uuid);
+				});
+			} else {
+				notifier.notify({
+					title: notification.title,
+					sound: true,
+					wait: true
+				}, function () {
+					log.info("Opening joplin://" + uuid);
+					open("joplin://" + uuid);
+				});
+			}
+
 			this.clearNotification(notification.id);
 		}, interval);
 

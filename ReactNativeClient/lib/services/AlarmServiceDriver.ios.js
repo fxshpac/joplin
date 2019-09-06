@@ -58,7 +58,7 @@ class AlarmServiceDriver {
 		PushNotificationIOS.cancelLocalNotifications({ id: id + '' });
 	}
 
-	async scheduleNotification(notification) {
+	async scheduleNotification(notification, note_id) {
 		if (!(await this.hasPermissions())) {
 			const ok = await this.requestPermissions();
 			if (!ok) return;

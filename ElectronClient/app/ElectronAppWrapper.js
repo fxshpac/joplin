@@ -208,15 +208,12 @@ class ElectronAppWrapper {
 
 			if (process.platform == 'win32') {
 
-				var log = require('electron-log');
-
 				const uuid = commandLine.slice(1)[0].replace("joplin://", "").replace("/", "");
-				log.info(uuid);
-
 				var validator = require('validator');
 				if (validator.isUUID(uuid, 4)) {
 					uuid_stripped = uuid.replace(/-/g, '');
 				} else {
+					var log = require('electron-log');
 					log.info("Invalid uuid received");
 				}
 

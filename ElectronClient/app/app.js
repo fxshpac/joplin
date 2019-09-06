@@ -1091,8 +1091,6 @@ class Application extends BaseApplication {
 	async loadNoteByUuid(uuid_stripped) {
 		const note = await Note.load(uuid_stripped);
 		if (note) {
-			var log = require('electron-log');
-			log.info(note);
 			this.dispatch({
 				type: 'FOLDER_AND_NOTE_SELECT',
 				folderId: note.parent_id,
@@ -1237,8 +1235,6 @@ class Application extends BaseApplication {
 		const ipcRenderer = require('electron').ipcRenderer;
 
 		ipcRenderer.on('ping', (event, uuid_stripped) => {
-			var log = require('electron-log');
-			log.info(uuid_stripped);
 			this.loadNoteByUuid(uuid_stripped);
 		});
 

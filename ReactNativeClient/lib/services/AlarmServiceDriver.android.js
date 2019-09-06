@@ -31,7 +31,7 @@ class AlarmServiceDriver {
 		return this.PushNotificationHandler_().cancelLocalNotifications({ id: id + '' });
 	}
 
-	async scheduleNotification(notification) {
+	async scheduleNotification(notification, note_id) {
 		const config = {
 			id: notification.id + '',
 			message: notification.title,
