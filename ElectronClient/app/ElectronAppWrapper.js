@@ -204,17 +204,18 @@ class ElectronAppWrapper {
 		// Someone tried to open a second instance - focus our window instead
 		this.electronApp_.on('second-instance', (event, commandLine, workingDirectory) => {
 
-			var uuid_stripped = "";
+			let uuid_stripped = "";
 
 			if (process.platform == 'win32') {
 
 				const uuid = commandLine.slice(1)[0].replace("joplin://", "").replace("/", "");
-				var validator = require('validator');
+				const validator = require('validator');
+				const log = require('electron-log');
 				if (validator.isUUID(uuid, 4)) {
 					uuid_stripped = uuid.replace(/-/g, '');
+					log.info("valid uuid " + uuid_stripped + " received");
 				} else {
-					var log = require('electron-log');
-					log.info("Invalid uuid received");
+					log.info("Invalid uuid " + uuid_stripped + " received");
 				}
 
 			}

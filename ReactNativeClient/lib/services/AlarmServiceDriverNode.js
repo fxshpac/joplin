@@ -35,6 +35,8 @@ class AlarmServiceDriverNode {
 			throw new Error('Trying to create a notification from an invalid object: ' + JSON.stringify(notification));
 		}
 
+		log.info("Scheduling for " + uuid);
+
 		const timeoutId = setTimeout(() => {
 
 			const open = require('open');
