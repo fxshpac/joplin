@@ -9,6 +9,8 @@ const Icon = require('react-native-vector-icons/Ionicons').default;
 const ModalDialog = require('lib/components/ModalDialog');
 const naturalCompare = require('string-natural-compare');
 
+Icon.loadFont();
+
 class NoteTagsDialogComponent extends React.Component {
 	constructor() {
 		super();
@@ -63,7 +65,7 @@ class NoteTagsDialogComponent extends React.Component {
 			);
 		};
 
-		this.tagKeyExtractor = (tag, index) => tag.id;
+		this.tagKeyExtractor = (tag) => tag.id;
 
 		this.okButton_press = async () => {
 			this.setState({ savingTags: true });

@@ -26,7 +26,7 @@ class FolderListWidget extends ListWidget {
 			} else if (item.type_ === Folder.modelType()) {
 				output.push(' '.repeat(this.folderDepth(this.folders, item.id)) + Folder.displayTitle(item));
 			} else if (item.type_ === Tag.modelType()) {
-				output.push('[' + Folder.displayTitle(item) + ']');
+				output.push(`[${Folder.displayTitle(item)}]`);
 			} else if (item.type_ === BaseModel.TYPE_SEARCH) {
 				output.push(_('Search:'));
 				output.push(item.title);
@@ -40,7 +40,7 @@ class FolderListWidget extends ListWidget {
 		let output = 0;
 		while (true) {
 			const folder = BaseModel.byId(folders, folderId);
-			if (!folder.parent_id) return output;
+			if (!folder || !folder.parent_id) return output;
 			output++;
 			folderId = folder.parent_id;
 		}
@@ -172,7 +172,7 @@ class FolderListWidget extends ListWidget {
 		if (this.notesParentType === 'Folder') return this.selectedFolderId;
 		if (this.notesParentType === 'Tag') return this.selectedTagId;
 		if (this.notesParentType === 'Search') return this.selectedSearchId;
-		throw new Error('Unknown parent type: ' + this.notesParentType);
+		throw new Error(`Unknown parent type: ${this.notesParentType}`);
 	}
 
 	get selectedJoplinItem() {

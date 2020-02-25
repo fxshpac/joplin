@@ -13,11 +13,8 @@ install:
   - yarn
 
 build_script:
-  - ps: cd Tools
   - npm install
-  - ps: cd ..\ElectronClient\app
-  - ps: xcopy /C /I /H /R /Y /S ..\..\ReactNativeClient\lib lib
-  - npm install
+  - ps: cd ElectronClient
   - yarn dist
 
 test: off

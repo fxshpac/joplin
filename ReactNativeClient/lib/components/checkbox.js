@@ -2,12 +2,13 @@ const React = require('react');
 const Component = React.Component;
 const { View, TouchableHighlight } = require('react-native');
 const Icon = require('react-native-vector-icons/Ionicons').default;
+Icon.loadFont();
 
 const styles = {
 	checkboxIcon: {
 		fontSize: 20,
 		height: 22,
-		//marginRight: 10,
+		// marginRight: 10,
 	},
 };
 
@@ -57,7 +58,7 @@ class Checkbox extends Component {
 
 		if (style && style.display === 'none') return <View />;
 
-		//if (style.display) thStyle.display = style.display;
+		// if (style.display) thStyle.display = style.display;
 
 		return (
 			<TouchableHighlight onPress={() => this.onPress()} style={thStyle}>

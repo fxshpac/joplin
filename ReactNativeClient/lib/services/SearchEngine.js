@@ -10,10 +10,11 @@ const { sprintf } = require('sprintf-js');
 
 class SearchEngine {
 	constructor() {
-		this.dispatch = action => {};
+		this.dispatch = () => {};
 		this.logger_ = new Logger();
 		this.db_ = null;
 		this.isIndexing_ = false;
+		this.syncCalls_ = [];
 	}
 
 	static instance() {
@@ -61,7 +62,7 @@ class SearchEngine {
 
 		while (noteIds.length) {
 			const currentIds = noteIds.splice(0, 100);
-			const notes = await Note.modelSelectAll('SELECT id, title, body FROM notes WHERE id IN ("' + currentIds.join('","') + '") AND is_conflict = 0 AND encryption_applied = 0');
+			const notes = await Note.modelSelectAll(`SELECT id, title, body FROM notes WHERE id IN ("${currentIds.join('","')}") AND is_conflict = 0 AND encryption_applied = 0`);
 			const queries = [];
 
 			for (let i = 0; i < notes.length; i++) {
@@ -95,7 +96,7 @@ class SearchEngine {
 		return this.syncTables();
 	}
 
-	async syncTables() {
+	async syncTables_() {
 		if (this.isIndexing_) return;
 
 		this.isIndexing_ = true;
@@ -137,7 +138,7 @@ class SearchEngine {
 				if (!changes.length) break;
 
 				const noteIds = changes.map(a => a.item_id);
-				const notes = await Note.modelSelectAll('SELECT id, title, body FROM notes WHERE id IN ("' + noteIds.join('","') + '") AND is_conflict = 0 AND encryption_applied = 0');
+				const notes = await Note.modelSelectAll(`SELECT id, title, body FROM notes WHERE id IN ("${noteIds.join('","')}") AND is_conflict = 0 AND encryption_applied = 0`);
 				const queries = [];
 
 				for (let i = 0; i < changes.length; i++) {
@@ -155,7 +156,7 @@ class SearchEngine {
 						queries.push({ sql: 'DELETE FROM notes_normalized WHERE id = ?', params: [change.item_id] });
 						report.deleted++;
 					} else {
-						throw new Error('Invalid change type: ' + change.type);
+						throw new Error(`Invalid change type: ${change.type}`);
 					}
 
 					lastChangeId = change.id;
@@ -174,6 +175,15 @@ class SearchEngine {
 		this.logger().info(sprintf('SearchEngine: Updated FTS table in %dms. Inserted: %d. Deleted: %d', Date.now() - startTime, report.inserted, report.deleted));
 
 		this.isIndexing_ = false;
+	}
+
+	async syncTables() {
+		this.syncCalls_.push(true);
+		try {
+			await this.syncTables_();
+		} finally {
+			this.syncCalls_.pop();
+		}
 	}
 
 	async countRows() {
@@ -252,7 +262,7 @@ class SearchEngine {
 
 		let regexString = pregQuote(term);
 		if (regexString[regexString.length - 1] === '*') {
-			regexString = regexString.substr(0, regexString.length - 2) + '[^' + pregQuote(' \t\n\r,.,+-*?!={}<>|:"\'()[]') + ']' + '*?';
+			regexString = `${regexString.substr(0, regexString.length - 2)}[^${pregQuote(' \t\n\r,.,+-*?!={}<>|:"\'()[]')}]` + '*?';
 			// regexString = regexString.substr(0, regexString.length - 2) + '.*?';
 		}
 
@@ -372,9 +382,9 @@ class SearchEngine {
 
 		for (const key of parsedQuery.keys) {
 			const term = parsedQuery.terms[key][0].value;
-			if (key === '_') searchOptions.anywherePattern = '*' + term + '*';
-			if (key === 'title') searchOptions.titlePattern = '*' + term + '*';
-			if (key === 'body') searchOptions.bodyPattern = '*' + term + '*';
+			if (key === '_') searchOptions.anywherePattern = `*${term}*`;
+			if (key === 'title') searchOptions.titlePattern = `*${term}*`;
+			if (key === 'body') searchOptions.bodyPattern = `*${term}*`;
 		}
 
 		return Note.previews(null, searchOptions);
@@ -386,7 +396,7 @@ class SearchEngine {
 
 		const st = scriptType(query);
 
-		if (!Setting.value('db.ftsEnabled') || ['ja', 'zh', 'ko'].indexOf(st) >= 0) {
+		if (!Setting.value('db.ftsEnabled') || ['ja', 'zh', 'ko', 'th'].indexOf(st) >= 0) {
 			// Non-alphabetical languages aren't support by SQLite FTS (except with extensions which are not available in all platforms)
 			return this.basicSearch(query);
 		} else {
@@ -397,10 +407,22 @@ class SearchEngine {
 				this.orderResults_(rows, parsedQuery);
 				return rows;
 			} catch (error) {
-				this.logger().warn('Cannot execute MATCH query: ' + query + ': ' + error.message);
+				this.logger().warn(`Cannot execute MATCH query: ${query}: ${error.message}`);
 				return [];
 			}
 		}
+	}
+
+	async cancelTimers() {
+		if (this.scheduleSyncTablesIID_) clearTimeout(this.scheduleSyncTablesIID_);
+		return new Promise((resolve) => {
+			const iid = setInterval(() => {
+				if (!this.syncCalls_.length) {
+					clearInterval(iid);
+					resolve();
+				}
+			}, 100);
+		});
 	}
 }
 

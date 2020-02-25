@@ -12,26 +12,33 @@ labels: 'bug'
   Please test using the latest Joplin release to make sure your issue has not already been fixed.
 -->
 
-## Environment
-
-Joplin version:
-Platform:
-OS specifcs:
 <!--
-  Platform can be one of: macOS, Linux, Windows, Android, iOS, terminal (or a combination)
-  OS specifcs: e.g. OS version, Linux distribution, Android/iOS version, ...
+  IMPORTANT: If you are reporting a clipper bug, please include an example URL that shows the issue.
+  Without the URL the issue is likely to be closed.
 -->
 
-## Steps To Reproduce
+## Environment
 
-1.
-2.
+Joplin version: 
+Platform: 
+OS specifics: 
+
+<!--
+  Platform can be one of: macOS, Linux, Windows, Android, iOS, terminal (or a combination)
+  OS specifics: e.g. OS version, Linux distribution, Android/iOS version...
+-->
+
+## Steps to reproduce
+
+1. 
+2. 
+3. 
 
 <!--
   Issues without reproduction steps are likely to stall.
 -->
 
-Describe what you expected to happen:
+## Describe what you expected to happen
 
 
 

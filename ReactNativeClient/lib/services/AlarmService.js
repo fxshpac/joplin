@@ -4,6 +4,8 @@ const Alarm = require('lib/models/Alarm.js');
 class AlarmService {
 	static setDriver(v) {
 		this.driver_ = v;
+
+		if (this.driver_.setService) this.driver_.setService(this);
 	}
 
 	static driver() {
@@ -33,7 +35,7 @@ class AlarmService {
 		// Delete alarms that correspond to non-existent notes
 		const alarmIds = await Alarm.alarmIdsWithoutNotes();
 		for (let i = 0; i < alarmIds.length; i++) {
-			this.logger().info('Clearing notification for non-existing note. Alarm ' + alarmIds[i]);
+			this.logger().info(`Clearing notification for non-existing note. Alarm ${alarmIds[i]}`);
 			await this.driver().clearNotification(alarmIds[i]);
 		}
 		await Alarm.batchDelete(alarmIds);
@@ -74,15 +76,15 @@ class AlarmService {
 				// if the app has just started the notifications need to be set again. so we do this below.
 				if (!driver.hasPersistentNotifications() && !driver.notificationIsSet(alarm.id)) {
 					const notification = await Alarm.makeNotification(alarm, note);
-					this.logger().info('Scheduling (non-persistent) notification for note ' + note.id, notification);
-					driver.scheduleNotification(notification, note.id);
+					this.logger().info(`Scheduling (non-persistent) notification for note ${note.id}`, notification);
+					driver.scheduleNotification(notification);
 				}
 
 				return;
 			}
 
 			if (clearAlarm) {
-				this.logger().info('Clearing notification for note ' + noteId);
+				this.logger().info(`Clearing notification for note ${noteId}`);
 				await driver.clearNotification(alarm.id);
 				await Alarm.delete(alarm.id);
 			}

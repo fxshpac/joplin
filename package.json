@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "Joplin root package for linting",
   "scripts": {
-    "linter": "./node_modules/.bin/eslint --fix --ext .js --ext .jsx"
+    "linter": "./node_modules/.bin/eslint --fix --ext .js --ext .jsx --ext .ts --ext .tsx",
+    "linter-ci": "./node_modules/.bin/eslint --ext .js --ext .jsx --ext .ts --ext .tsx",
+    "watch": "gulp watch",
+    "build": "gulp build",
+    "postinstall": "cd ReactNativeClient && npm i && cd .. && cd ElectronClient && npm i && cd .. && cd CliClient && npm i && cd .. && gulp build"
   },
   "husky": {
     "hooks": {
@@ -11,8 +15,9 @@
     }
   },
   "lint-staged": {
-    "*.{js,jsx}": [
-      "npm run linter"
+    "*.{js,jsx,ts,tsx}": [
+      "npm run linter",
+      "git add"
     ]
   },
   "repository": {
@@ -21,10 +26,18 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@types/react": "^16.9.0",
+    "@types/react-dom": "^16.9.0",
+    "@typescript-eslint/eslint-plugin": "^2.10.0",
+    "@typescript-eslint/parser": "^2.10.0",
     "eslint": "^6.1.0",
-    "eslint-plugin-react": "^7.14.3",
+    "eslint-plugin-react": "^7.18.0",
+    "fs-extra": "^8.1.0",
+    "glob": "^7.1.6",
+    "gulp": "^4.0.2",
+    "gulp-typescript": "^6.0.0-alpha.1",
     "husky": "^3.0.2",
-    "lint-staged": "^9.2.1"
-  },
-  "dependencies": {}
+    "lint-staged": "^9.2.1",
+    "typescript": "^3.7.3"
+  }
 }

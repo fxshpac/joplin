@@ -3,6 +3,7 @@
 const fs = require('fs-extra');
 const { JoplinDatabase } = require('lib/joplin-database.js');
 const { DatabaseDriverNode } = require('lib/database-driver-node.js');
+const { BaseApplication }= require('lib/BaseApplication.js');
 const BaseModel = require('lib/BaseModel.js');
 const Folder = require('lib/models/Folder.js');
 const Note = require('lib/models/Note.js');
@@ -24,6 +25,8 @@ const BaseService = require('lib/services/BaseService.js');
 const { FsDriverNode } = require('lib/fs-driver-node.js');
 const { time } = require('lib/time-utils.js');
 const { shimInit } = require('lib/shim-init-node.js');
+const { shim } = require('lib/shim.js');
+const { uuid } = require('lib/uuid.js');
 const SyncTargetRegistry = require('lib/SyncTargetRegistry.js');
 const SyncTargetMemory = require('lib/SyncTargetMemory.js');
 const SyncTargetFilesystem = require('lib/SyncTargetFilesystem.js');
@@ -48,7 +51,14 @@ let kvStores_ = [];
 let fileApi_ = null;
 let currentClient_ = 1;
 
+// The line `process.on('unhandledRejection'...` in all the test files is going to
+// make it throw this error. It's not too big a problem so disable it for now.
+// https://stackoverflow.com/questions/9768444/possible-eventemitter-memory-leak-detected
+process.setMaxListeners(0);
+
 shimInit();
+
+shim.setIsTestingEnv(true);
 
 const fsDriver = new FsDriverNode();
 Logger.fsDriver_ = fsDriver;
@@ -56,8 +66,8 @@ Resource.fsDriver_ = fsDriver;
 EncryptionService.fsDriver_ = fsDriver;
 FileApiDriverLocal.fsDriver_ = fsDriver;
 
-const logDir = __dirname + '/../tests/logs';
-const tempDir = __dirname + '/../tests/tmp';
+const logDir = `${__dirname}/../tests/logs`;
+const tempDir = `${__dirname}/../tests/tmp`;
 fs.mkdirpSync(logDir, 0o755);
 fs.mkdirpSync(tempDir, 0o755);
 
@@ -69,22 +79,22 @@ SyncTargetRegistry.addClass(SyncTargetDropbox);
 
 // const syncTargetId_ = SyncTargetRegistry.nameToId("nextcloud");
 const syncTargetId_ = SyncTargetRegistry.nameToId('memory');
-//const syncTargetId_ = SyncTargetRegistry.nameToId('filesystem');
+// const syncTargetId_ = SyncTargetRegistry.nameToId('filesystem');
 // const syncTargetId_ = SyncTargetRegistry.nameToId('dropbox');
-const syncDir = __dirname + '/../tests/sync';
+const syncDir = `${__dirname}/../tests/sync`;
 
-const sleepTime = syncTargetId_ == SyncTargetRegistry.nameToId('filesystem') ? 1001 : 100;//400;
+const sleepTime = syncTargetId_ == SyncTargetRegistry.nameToId('filesystem') ? 1001 : 100;// 400;
 
-console.info('Testing with sync target: ' + SyncTargetRegistry.idToName(syncTargetId_));
+console.info(`Testing with sync target: ${SyncTargetRegistry.idToName(syncTargetId_)}`);
 
 const dbLogger = new Logger();
 dbLogger.addTarget('console');
-dbLogger.addTarget('file', { path: logDir + '/log.txt' });
+dbLogger.addTarget('file', { path: `${logDir}/log.txt` });
 dbLogger.setLevel(Logger.LEVEL_WARN);
 
 const logger = new Logger();
 logger.addTarget('console');
-logger.addTarget('file', { path: logDir + '/log.txt' });
+logger.addTarget('file', { path: `${logDir}/log.txt` });
 logger.setLevel(Logger.LEVEL_WARN); // Set to DEBUG to display sync process in console
 
 BaseItem.loadClass('Note', Note);
@@ -116,7 +126,7 @@ function sleep(n) {
 }
 
 async function switchClient(id) {
-	if (!databases_[id]) throw new Error('Call setupDatabaseAndSynchronizer(' + id + ') first!!');
+	if (!databases_[id]) throw new Error(`Call setupDatabaseAndSynchronizer(${id}) first!!`);
 
 	await time.msleep(sleepTime); // Always leave a little time so that updated_time properties don't overlap
 	await Setting.saveAll();
@@ -135,7 +145,10 @@ async function switchClient(id) {
 
 	Setting.setConstant('resourceDir', resourceDir(id));
 
-	return Setting.load();
+	await Setting.load();
+
+	if (!Setting.value('clientId')) Setting.setValue('clientId', uuid.create());
+	Setting.setValue('sync.wipeOutFailSafe', false); // To keep things simple, always disable fail-safe unless explicitely set in the test itself
 }
 
 async function clearDatabase(id = null) {
@@ -162,8 +175,8 @@ async function clearDatabase(id = null) {
 
 	const queries = [];
 	for (const n of tableNames) {
-		queries.push('DELETE FROM ' + n);
-		queries.push('DELETE FROM sqlite_sequence WHERE name="' + n + '"'); // Reset autoincremented IDs
+		queries.push(`DELETE FROM ${n}`);
+		queries.push(`DELETE FROM sqlite_sequence WHERE name="${n}"`); // Reset autoincremented IDs
 	}
 
 	await databases_[id].transactionExecBatch(queries);
@@ -178,10 +191,11 @@ async function setupDatabase(id = null) {
 	if (databases_[id]) {
 		await clearDatabase(id);
 		await Setting.load();
+		if (!Setting.value('clientId')) Setting.setValue('clientId', uuid.create());
 		return;
 	}
 
-	const filePath = __dirname + '/data/test-' + id + '.sqlite';
+	const filePath = `${__dirname}/data/test-${id}.sqlite`;
 
 	try {
 		await fs.unlink(filePath);
@@ -195,11 +209,12 @@ async function setupDatabase(id = null) {
 
 	BaseModel.db_ = databases_[id];
 	await Setting.load();
+	if (!Setting.value('clientId')) Setting.setValue('clientId', uuid.create());
 }
 
 function resourceDir(id = null) {
 	if (id === null) id = currentClient_;
-	return __dirname + '/data/resources-' + id;
+	return `${__dirname}/data/resources-${id}`;
 }
 
 async function setupDatabaseAndSynchronizer(id = null) {
@@ -281,11 +296,11 @@ async function loadEncryptionMasterKey(id = null, useExisting = false) {
 		masterKey = await MasterKey.save(masterKey);
 	} else { // Use the one already available
 		const masterKeys = await MasterKey.all();
-		if (!masterKeys.length) throw new Error('No mater key available');
+		if (!masterKeys.length) throw new Error('No master key available');
 		masterKey = masterKeys[0];
 	}
 
-	await service.loadMasterKey(masterKey, '123456', true);
+	await service.loadMasterKey_(masterKey, '123456', true);
 
 	return masterKey;
 }
@@ -310,9 +325,9 @@ function fileApi() {
 		fileApi_ = new FileApi('', new FileApiDriverWebDav(api));
 	} else if (syncTargetId_ == SyncTargetRegistry.nameToId('dropbox')) {
 		const api = new DropboxApi();
-		const authTokenPath = __dirname + '/support/dropbox-auth.txt';
+		const authTokenPath = `${__dirname}/support/dropbox-auth.txt`;
 		const authToken = fs.readFileSync(authTokenPath, 'utf8');
-		if (!authToken) throw new Error('Dropbox auth token missing in ' + authTokenPath);
+		if (!authToken) throw new Error(`Dropbox auth token missing in ${authTokenPath}`);
 		api.setAuthToken(authToken);
 		fileApi_ = new FileApi('', new FileApiDriverDropbox(api));
 	}
@@ -356,7 +371,12 @@ function asyncTest(callback) {
 		try {
 			await callback();
 		} catch (error) {
-			console.error(error);
+			if (error.constructor && error.constructor.name === 'ExpectationFailed') {
+				// OK - will be reported by Jasmine
+			} else {
+				console.error(error);
+				expect(0).toBe(1, 'Test has thrown an exception - see above error');
+			}
 		} finally {
 			done();
 		}
@@ -380,7 +400,7 @@ async function allSyncTargetItemsEncrypted() {
 		totalCount++;
 
 		if (remoteContent.type_ === BaseModel.TYPE_RESOURCE) {
-			const content = await fileApi().get('.resource/' + remoteContent.id);
+			const content = await fileApi().get(`.resource/${remoteContent.id}`);
 			totalCount++;
 			if (content.substr(0, 5) === 'JED01') encryptedCount++;
 		}
@@ -393,4 +413,49 @@ async function allSyncTargetItemsEncrypted() {
 	return totalCount === encryptedCount;
 }
 
-module.exports = { kvStore, resourceService, allSyncTargetItemsEncrypted, setupDatabase, revisionService, setupDatabaseAndSynchronizer, db, synchronizer, fileApi, sleep, clearDatabase, switchClient, syncTargetId, objectsEqual, checkThrowAsync, encryptionService, loadEncryptionMasterKey, fileContentEqual, decryptionWorker, asyncTest };
+class TestApp extends BaseApplication {
+	constructor() {
+		super();
+		this.middlewareCalls_ = [];
+	}
+
+	async start(argv) {
+		argv = await super.start(argv);
+		this.initRedux();
+		await setupDatabaseAndSynchronizer(1);
+		await switchClient(1);
+		Setting.dispatchUpdateAll();
+		await time.msleep(100);
+	}
+
+	async generalMiddleware(store, next, action) {
+		this.middlewareCalls_.push(true);
+		try {
+			await super.generalMiddleware(store, next, action);
+		} finally {
+			this.middlewareCalls_.pop();
+		}
+	}
+
+	async waitForMiddleware_() {
+		return new Promise((resolve) => {
+			const iid = setInterval(() => {
+				if (!this.middlewareCalls_.length) {
+					clearInterval(iid);
+					resolve();
+				}
+			}, 100);
+		});
+	}
+
+	async destroy() {
+		this.deinitRedux();
+		await this.waitForMiddleware_();
+		await super.destroy();
+
+	}
+}
+
+
+module.exports = { kvStore, resourceService, allSyncTargetItemsEncrypted, setupDatabase, revisionService, setupDatabaseAndSynchronizer, db, synchronizer, fileApi, sleep, clearDatabase, switchClient, syncTargetId, objectsEqual, checkThrowAsync, encryptionService, loadEncryptionMasterKey, fileContentEqual, decryptionWorker, asyncTest, TestApp };
+
