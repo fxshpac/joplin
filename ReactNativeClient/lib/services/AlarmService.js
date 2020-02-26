@@ -100,8 +100,7 @@ class AlarmService {
 			alarm = await Alarm.byNoteId(note.id);
 
 			const notification = await Alarm.makeNotification(alarm, note);
-			this.logger().info('Scheduling notification for note ' + note.id, notification);
-
+			this.logger().info(`Scheduling notification for note ${note.id}`, notification);
 			await driver.scheduleNotification(notification, note.id);
 		} catch (error) {
 			this.logger().error('Could not update notification', error);
