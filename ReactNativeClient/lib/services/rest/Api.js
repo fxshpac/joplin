@@ -19,49 +19,19 @@ const ArrayUtils = require('lib/ArrayUtils.js');
 const { netUtils } = require('lib/net-utils');
 const { fileExtension, safeFileExtension, safeFilename, filename } = require('lib/path-utils');
 const ApiResponse = require('lib/services/rest/ApiResponse');
-const SearchEngineUtils = require('lib/services/SearchEngineUtils');
+const SearchEngineUtils = require('lib/services/searchengine/SearchEngineUtils');
 const { FoldersScreenUtils } = require('lib/folders-screen-utils.js');
 const uri2path = require('file-uri-to-path');
 const { MarkupToHtml } = require('lib/joplin-renderer');
 const { uuid } = require('lib/uuid');
-
-class ApiError extends Error {
-	constructor(message, httpCode = 400) {
-		super(message);
-		this.httpCode_ = httpCode;
-	}
-
-	get httpCode() {
-		return this.httpCode_;
-	}
-}
-
-class ErrorMethodNotAllowed extends ApiError {
-	constructor(message = 'Method Not Allowed') {
-		super(message, 405);
-	}
-}
-class ErrorNotFound extends ApiError {
-	constructor(message = 'Not Found') {
-		super(message, 404);
-	}
-}
-class ErrorForbidden extends ApiError {
-	constructor(message = 'Forbidden') {
-		super(message, 403);
-	}
-}
-class ErrorBadRequest extends ApiError {
-	constructor(message = 'Bad Request') {
-		super(message, 400);
-	}
-}
+const { ErrorMethodNotAllowed, ErrorForbidden, ErrorBadRequest, ErrorNotFound } = require('./errors');
 
 class Api {
-	constructor(token = null) {
+	constructor(token = null, actionApi = null) {
 		this.token_ = token;
 		this.knownNounces_ = {};
 		this.logger_ = new Logger();
+		this.actionApi_ = actionApi;
 	}
 
 	get token() {
@@ -74,7 +44,7 @@ class Api {
 
 		const pathParts = path.split('/');
 		const callSuffix = pathParts.splice(0, 1)[0];
-		let callName = `action_${callSuffix}`;
+		const callName = `action_${callSuffix}`;
 		return {
 			callName: callName,
 			params: pathParts,
@@ -121,7 +91,7 @@ class Api {
 
 		let id = null;
 		let link = null;
-		let params = parsedPath.params;
+		const params = parsedPath.params;
 
 		if (params.length >= 1) {
 			id = params[0];
@@ -351,7 +321,7 @@ class Api {
 			if (!request.files.length) throw new ErrorBadRequest('Resource cannot be created without a file');
 			const filePath = request.files[0].path;
 			const defaultProps = request.bodyJson(this.readonlyProperties('POST'));
-			return shim.createResourceFromPath(filePath, defaultProps);
+			return shim.createResourceFromPath(filePath, defaultProps, { userSideValidation: true });
 		}
 
 		return this.defaultAction_(BaseModel.TYPE_RESOURCE, request, id, link);
@@ -377,6 +347,25 @@ class Api {
 		return options;
 	}
 
+	async execServiceActionFromRequest_(externalApi, request) {
+		const action = externalApi[request.action];
+		if (!action) throw new ErrorNotFound(`Invalid action: ${request.action}`);
+		const args = Object.assign({}, request);
+		delete args.action;
+		return action(args);
+	}
+
+	async action_services(request, serviceName) {
+		this.checkToken_(request);
+
+		if (request.method !== 'POST') throw new ErrorMethodNotAllowed();
+		if (!this.actionApi_) throw new ErrorNotFound('No action API has been setup!');
+		if (!this.actionApi_[serviceName]) throw new ErrorNotFound(`No such service: ${serviceName}`);
+
+		const externalApi = this.actionApi_[serviceName]();
+		return this.execServiceActionFromRequest_(externalApi, JSON.parse(request.body));
+	}
+
 	async action_notes(request, id = null, link = null) {
 		this.checkToken_(request);
 
@@ -389,7 +378,7 @@ class Api {
 				const resourceIds = await Note.linkedResourceIds(note.body);
 				const output = [];
 				const loadOptions = this.defaultLoadOptions_(request);
-				for (let resourceId of resourceIds) {
+				for (const resourceId of resourceIds) {
 					output.push(await Resource.load(resourceId, loadOptions));
 				}
 				return output;
@@ -449,6 +438,22 @@ class Api {
 			this.logger().info(`Request (${requestId}): Created note ${note.id}`);
 
 			return note;
+		}
+
+		if (request.method === 'PUT') {
+			const note = await Note.load(id);
+
+			if (!note) throw new ErrorNotFound();
+
+			const updatedNote = await this.defaultAction_(BaseModel.TYPE_NOTE, request, id, link);
+
+			const requestNote = JSON.parse(request.body);
+			if (requestNote.tags || requestNote.tags === '') {
+				const tagTitles = requestNote.tags.split(',');
+				await Tag.setNoteTagsByTitles(id, tagTitles);
+			}
+
+			return updatedNote;
 		}
 
 		return this.defaultAction_(BaseModel.TYPE_NOTE, request, id, link);
@@ -654,7 +659,7 @@ class Api {
 	}
 
 	async createResourcesFromPaths_(urls) {
-		for (let url in urls) {
+		for (const url in urls) {
 			if (!urls.hasOwnProperty(url)) continue;
 			const urlInfo = urls[url];
 			try {
@@ -668,7 +673,7 @@ class Api {
 	}
 
 	async removeTempFiles_(urls) {
-		for (let url in urls) {
+		for (const url in urls) {
 			if (!urls.hasOwnProperty(url)) continue;
 			const urlInfo = urls[url];
 			try {

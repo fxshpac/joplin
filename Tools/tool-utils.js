@@ -22,7 +22,7 @@ toolUtils.execCommand = function(command) {
 };
 
 toolUtils.execCommandWithPipes = function(executable, args) {
-	var spawn = require('child_process').spawn;
+	const spawn = require('child_process').spawn;
 
 	return new Promise((resolve, reject) => {
 		const child = spawn(executable, args, { stdio: 'inherit' });
@@ -160,6 +160,12 @@ toolUtils.githubUsername = async function(email, name) {
 	await saveGitHubUsernameCache(cache);
 
 	return output;
+};
+
+toolUtils.patreonOauthToken = async function() {
+	const fs = require('fs-extra');
+	const r = await fs.readFile(`${__dirname}/patreon_oauth_token.txt`);
+	return r.toString();
 };
 
 toolUtils.githubOauthToken = async function() {

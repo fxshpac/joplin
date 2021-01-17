@@ -12,8 +12,19 @@ import { YellowBox, AppRegistry } from 'react-native';
 YellowBox.ignoreWarnings([
 	'Require cycle: node_modules/react-native-',
 	'Require cycle: node_modules/rn-fetch-blob',
+	'Warning: componentWillReceiveProps has been renamed',
+	'Warning: componentWillUpdate has been renamed',
+	'Warning: componentWillMount has been renamed',
 ]);
 const { Root } = require('./root.js');
+
+// Disable buggy Fast Refresh
+// NOTE: not working - can make the app go into an infinite crash/restart loop
+// if (__DEV__) {
+// 	const { DevSettings } = NativeModules;
+// 	DevSettings.setHotLoadingEnabled(false);
+// 	DevSettings.setLiveReloadEnabled(false);
+// }
 
 function main() {
 	AppRegistry.registerComponent('Joplin', () => Root);

@@ -36,10 +36,12 @@ class NoteTextViewerComponent extends React.Component {
 		const callName = event.data.name;
 		const args = event.data.args;
 
-		if (this.props.onIpcMessage) this.props.onIpcMessage({
-			channel: callName,
-			args: args,
-		});
+		if (this.props.onIpcMessage) {
+			this.props.onIpcMessage({
+				channel: callName,
+				args: args,
+			});
+		}
 	}
 
 	domReady() {
@@ -57,7 +59,7 @@ class NoteTextViewerComponent extends React.Component {
 			};
 		}
 
-		for (let n in this.webviewListeners_) {
+		for (const n in this.webviewListeners_) {
 			if (!this.webviewListeners_.hasOwnProperty(n)) continue;
 			const fn = this.webviewListeners_[n];
 			wv.addEventListener(n, fn);
@@ -70,7 +72,7 @@ class NoteTextViewerComponent extends React.Component {
 		const wv = this.webviewRef_.current;
 		if (!wv || !this.initialized_) return;
 
-		for (let n in this.webviewListeners_) {
+		for (const n in this.webviewListeners_) {
 			if (!this.webviewListeners_.hasOwnProperty(n)) continue;
 			const fn = this.webviewListeners_[n];
 			wv.removeEventListener(n, fn);
@@ -160,7 +162,7 @@ class NoteTextViewerComponent extends React.Component {
 	// ----------------------------------------------------------------
 
 	render() {
-		const viewerStyle = Object.assign({}, this.props.viewerStyle, { borderTop: 'none', borderRight: 'none', borderBottom: 'none' });
+		const viewerStyle = Object.assign({}, { border: 'none' }, this.props.viewerStyle);
 		return <iframe className="noteTextViewer" ref={this.webviewRef_} style={viewerStyle} src="gui/note-viewer/index.html"></iframe>;
 	}
 }

@@ -1,13 +1,13 @@
 const React = require('react');
 const { connect } = require('react-redux');
 const { time } = require('lib/time-utils.js');
-const { themeStyle } = require('../theme.js');
+const { themeStyle } = require('lib/theme');
 
 class NoteStatusBarComponent extends React.Component {
 	style() {
 		const theme = themeStyle(this.props.theme);
 
-		let style = {
+		const style = {
 			root: Object.assign({}, theme.textStyle, {
 				backgroundColor: theme.backgroundColor,
 				color: theme.colorFaded,

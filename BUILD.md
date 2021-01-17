@@ -7,7 +7,10 @@ Note that all the applications share the same library, which, for historical rea
 ## Required dependencies
 
 - Install yarn - https://yarnpkg.com/lang/en/docs/install/
-- Install node - https://nodejs.org/en/
+- Install node 10+ - https://nodejs.org/en/
+- macOS, Linux: Install rsync - https://nodejs.org/en/
+- macOS: Install Cocoapods - `brew install cocoapods`
+- Windows: Install Windows Build Tools - `npm install -g windows-build-tools`
 
 ## Building
 
@@ -20,25 +23,12 @@ Then you can test the various applications:
 ## Testing the desktop application
 
 	cd ElectronClient
-	npm run start
-
-If you'd like to auto-reload the app on changes rather than having to quit and restart it manually each time, you can use [watchman-make](https://facebook.github.io/watchman/docs/watchman-make.html):
-
-```sh
-cd ElectronClient
-watchman-make -p '**/*.js' '**/*.jsx' --run "npm run start"
-```
-
-It still requires you to quit the application each time you want it to rebuild, but at least you don't have to re-run `"npm run start"` each time. Here's what the workflow loop looks like in practice:
-
-1. Edit and save files in your text editor.
-2. Switch to the Electron app and <kbd>cmd</kbd>+<kbd>Q</kbd> to quit it.
-3. `watchman` immediately restarts the app for you (whereas usually you'd have to switch back to the terminal, type `"npm run start"`, and hit enter).
+	npm start
 
 ## Testing the Terminal application
 
 	cd CliClient
-	npm run start
+	npm start
 
 ## Testing the Mobile application
 
@@ -52,7 +42,7 @@ Then:
 
 To run the iOS application, it might be easier to open the file `ios/Joplin.xcworkspace` on XCode and run the app from there.
 
-Normally the bundler should start automatically with the application. If it doesn't run `npm run start`.
+Normally the bundler should start automatically with the application. If it doesn't, run `npm start`.
 
 ## Building the clipper
 
@@ -72,45 +62,35 @@ Running `npm run build` would have the same effect, but without watching.
 
 ## Running an application with additional parameters
 
-You can specify additional parameters when running the desktop or CLI application. To do so, add `--` to the `npm run start` command, followed by your flags. For example:
+You can specify additional parameters when running the desktop or CLI application. To do so, add `--` to the `npm start` command, followed by your flags. For example:
 
-	npm run start -- --profile ~/MyTestProfile
+	npm start -- --profile ~/MyTestProfile
 
 ## TypeScript
 
 Most of the application is written in JavaScript, however new classes and files should generally be written in [TypeScript](https://www.typescriptlang.org/). All TypeScript files are generated next to the .ts or .tsx file. So for example, if there's a file "lib/MyClass.ts", there will be a generated "lib/MyClass.js" next to it. It is implemented that way as it requires minimal changes to integrate TypeScript in the existing JavaScript code base.
 
-# Troubleshooting desktop application
+In the current setup, `tsc` is executed from the root of the project, and will compile everything in CliClient, ElectronClient, etc. This is more convenient to have just one place to compile everything, and it also means there's only one watch command to run. However, one drawback is that TypeScript doesn't find types defined in node_modules folders in sub-directories. For example, if you install `immer` in ElectronClient, then try to use the package, TypeScript will report that it cannot find this module. In theory using `typeRoots`, it should be possible to make it find the right modules but it doesn't seem to work in this case. Currently the workaround is to install any such package at the root of the project. By doing so, TypeScript will find the type definitions and compilation will work. It's not ideal since the module is installed at the root even though it's not used, but for now that will work.
 
-## On Linux and macOS
+## Hot reload
 
-If there's an error `while loading shared libraries: libgconf-2.so.4: cannot open shared object file: No such file or directory`, run `sudo apt-get install libgconf-2-4`
+If you'd like to auto-reload the desktop app on changes rather than having to quit and restart it manually each time, you can use [watchman-make](https://facebook.github.io/watchman/docs/watchman-make.html):
 
-If you get a node-gyp related error, you might need to manually install it: `npm install -g node-gyp`.
+```sh
+cd ElectronClient
+watchman-make -p '**/*.js' '**/*.jsx' --run "npm start"
+```
 
-If you get the error `libtool: unrecognized option '-static'`, follow the instructions [in this post](https://stackoverflow.com/a/38552393/561309) to use the correct libtool version.
+It still requires you to quit the application each time you want it to rebuild, but at least you don't have to re-run `"npm start"` each time. Here's what the workflow loop looks like in practice:
 
-## On Windows
+1. Edit and save files in your text editor.
+2. Switch to the Electron app and <kbd>cmd</kbd>+<kbd>Q</kbd> to quit it.
+3. `watchman` immediately restarts the app for you (whereas usually you'd have to switch back to the terminal, type `"npm start"`, and hit enter).
 
-If node-gyp does not work (MSBUILD: error MSB3428: Could not load the Visual C++ component "VCBuild.exe"), you might need to install `windows-build-tools` using `npm install --global windows-build-tools`.
+# Updating Markdown renderer packages
 
-If `yarn dist` fails, it may need administrative rights.
+The Markdown renderer is located under ReactNativeClient/lib/joplin-renderer. Whenever updating one of its dependencies, such as Mermaid or Katex, please run `npm run buildAssets` to make sure all assets such as fonts or CSS files are deployed correctly.
 
-If you get an `error MSB8020: The build tools for v140 cannot be found.` try to run with a different toolset version, eg `npm install --toolset=v141` (See [here](https://github.com/mapbox/node-sqlite3/issues/1124) for more info).
+# Troubleshooting
 
-## Other issues
-
-> The application window doesn't open or is white
-
-This is an indication that there's an early initialisation error. Try this:
-
-- In ElectronAppWrapper, set `debugEarlyBugs` to `true`. This will force the window to show up and should open the console next to it, which should display any error.
-- In more rare cases, an already open instance of Joplin can create strange low-level bugs that will display no error but will result in this white window. A non-dev instance of Joplin, or a dev instance that wasn't properly closed might cause this. So make sure you close everything and try again. Perhaps even other Electron apps running (Skype, Slack, etc.) could cause this?
-- Also try to delete node_modules and rebuild.
-- If all else fails, switch your computer off and on again, to make sure you start clean.
-
-> How to work on the app from Windows?
-
-**You should not use WSL at all** because this is a GUI app that lives outside of WSL, and the WSL layer can cause all kind of very hard to debug issues. It can also lock files in node_modules that cannot be unlocked when the app crashes. (You need to restart your computer.) Likewise, don't run the TypeScript watch command from WSL.
-
-So everything should be done from a Windows Command prompt or Windows PowerShell running as Administrator. All build and start commands are designed to work cross-platform, including on Windows.
+Please read for the [Build Troubleshooting Document](https://github.com/laurent22/joplin/blob/master/readme/build_troubleshooting.md) for various tips on how to get the build working.

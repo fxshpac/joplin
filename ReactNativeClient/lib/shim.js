@@ -1,11 +1,11 @@
 /* eslint @typescript-eslint/no-unused-vars: 0, no-unused-vars: ["error", { "argsIgnorePattern": ".*" }], */
 
-let shim = {};
+const shim = {};
 
 shim.isNode = () => {
 	if (typeof process === 'undefined') return false;
 	if (shim.isElectron()) return true;
-	return process.title == 'node';
+	return process.title == 'node' || (process.title && process.title.indexOf('gulp') === 0);
 };
 
 shim.isReactNative = () => {
@@ -214,6 +214,14 @@ shim.isTestingEnv = () => {
 
 shim.setIsTestingEnv = (v) => {
 	isTestingEnv_ = v;
+};
+
+shim.pathRelativeToCwd = (path) => {
+	throw new Error('Not implemented');
+};
+
+shim.showMessageBox = (message, options = null) => {
+	throw new Error('Not implemented');
 };
 
 module.exports = { shim };

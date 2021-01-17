@@ -122,7 +122,7 @@ class NoteTagsDialogComponent extends React.Component {
 		if (this.styles_[themeId]) return this.styles_[themeId];
 		this.styles_ = {};
 
-		let styles = {
+		const styles = {
 			tag: {
 				padding: 10,
 				borderBottomWidth: 1,
@@ -163,6 +163,7 @@ class NoteTagsDialogComponent extends React.Component {
 					<Text style={this.styles().newTagBoxLabel}>{_('New tags:')}</Text>
 					<TextInput
 						selectionColor={theme.textSelectionColor}
+						keyboardAppearance={theme.keyboardAppearance}
 						value={this.state.newTags}
 						onChangeText={value => {
 							this.setState({ newTags: value });

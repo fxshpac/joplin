@@ -2,7 +2,7 @@ const React = require('react');
 const { connect } = require('react-redux');
 const Setting = require('lib/models/Setting.js');
 const { bridge } = require('electron').remote.require('./bridge');
-const { themeStyle } = require('../theme.js');
+const { themeStyle } = require('lib/theme');
 const pathUtils = require('lib/path-utils.js');
 const { _ } = require('lib/locale.js');
 const SyncTargetRegistry = require('lib/SyncTargetRegistry');
@@ -92,8 +92,8 @@ class ConfigScreenComponent extends React.Component {
 	}
 
 	keyValueToArray(kv) {
-		let output = [];
-		for (let k in kv) {
+		const output = [];
+		for (const k in kv) {
 			if (!kv.hasOwnProperty(k)) continue;
 			output.push({
 				key: k,
@@ -104,9 +104,20 @@ class ConfigScreenComponent extends React.Component {
 		return output;
 	}
 
+	renderSectionDescription(section) {
+		const description = Setting.sectionDescription(section.name);
+		if (!description) return null;
+
+		const theme = themeStyle(this.props.theme);
+		return (
+			<div style={Object.assign({}, theme.textStyle, { marginBottom: 15 })}>
+				{description}
+			</div>
+		);
+	}
+
 	sectionToComponent(key, section, settings, selected) {
 		const theme = themeStyle(this.props.theme);
-		// const settingComps = [];
 
 		const createSettingComponents = (advanced) => {
 			const output = [];
@@ -132,8 +143,6 @@ class ConfigScreenComponent extends React.Component {
 		if (section.name === 'general') {
 			sectionStyle.borderTopWidth = 0;
 		}
-
-		const noteComp = section.name !== 'general' ? null : <div style={Object.assign({}, theme.textStyle, { marginBottom: 10 })}>{_('Notes and settings are stored in: %s', pathUtils.toSystemSlashes(Setting.value('profileDir'), process.platform))}</div>;
 
 		if (section.name === 'sync') {
 			const syncTargetMd = SyncTargetRegistry.idToMetadata(settings['sync.target']);
@@ -205,10 +214,10 @@ class ConfigScreenComponent extends React.Component {
 		}
 
 		let advancedSettingsButton = null;
-		let advancedSettingsSectionStyle = { display: 'none' };
+		const advancedSettingsSectionStyle = { display: 'none' };
 
 		if (advancedSettingComps.length) {
-			const iconName = this.state.showAdvancedSettings ? 'fa fa-toggle-up' : 'fa fa-toggle-down';
+			const iconName = this.state.showAdvancedSettings ? 'fa fa-angle-down' : 'fa fa-angle-right';
 			const advancedSettingsButtonStyle = Object.assign({}, theme.buttonStyle, { marginBottom: 10 });
 			advancedSettingsButton = <button onClick={() => shared.advancedSettingsButton_click(this)} style={advancedSettingsButtonStyle}><i style={{ fontSize: 14 }} className={iconName}></i> {_('Show Advanced Settings')}</button>;
 			advancedSettingsSectionStyle.display = this.state.showAdvancedSettings ? 'block' : 'none';
@@ -216,7 +225,7 @@ class ConfigScreenComponent extends React.Component {
 
 		return (
 			<div key={key} style={sectionStyle}>
-				{noteComp}
+				{this.renderSectionDescription(section)}
 				<div>{settingComps}</div>
 				{advancedSettingsButton}
 				<div style={advancedSettingsSectionStyle}>{advancedSettingComps}</div>
@@ -227,7 +236,7 @@ class ConfigScreenComponent extends React.Component {
 	settingToComponent(key, value) {
 		const theme = themeStyle(this.props.theme);
 
-		let output = null;
+		const output = null;
 
 		const rowStyle = this.rowStyle_;
 
@@ -283,9 +292,9 @@ class ConfigScreenComponent extends React.Component {
 		const descriptionComp = descriptionText ? <div style={descriptionStyle}>{descriptionText}</div> : null;
 
 		if (md.isEnum) {
-			let items = [];
+			const items = [];
 			const settingOptions = md.options();
-			let array = this.keyValueToArray(settingOptions);
+			const array = this.keyValueToArray(settingOptions);
 			for (let i = 0; i < array.length; i++) {
 				const e = array[i];
 				items.push(
@@ -547,7 +556,7 @@ class ConfigScreenComponent extends React.Component {
 			}
 		);
 
-		let settings = this.state.settings;
+		const settings = this.state.settings;
 
 		const containerStyle = Object.assign({}, theme.containerStyle, { padding: 10, paddingTop: 0, display: 'flex', flex: 1 });
 

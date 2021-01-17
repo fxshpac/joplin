@@ -1,6 +1,6 @@
 const React = require('react');
 const { connect } = require('react-redux');
-const { themeStyle } = require('../theme.js');
+const { themeStyle } = require('lib/theme');
 const { _ } = require('lib/locale.js');
 
 class NoteSearchBarComponent extends React.Component {
@@ -19,7 +19,7 @@ class NoteSearchBarComponent extends React.Component {
 	style() {
 		const theme = themeStyle(this.props.theme);
 
-		let style = {
+		const style = {
 			root: Object.assign({}, theme.textStyle, {
 				backgroundColor: theme.backgroundColor,
 				color: theme.colorFaded,
@@ -52,7 +52,7 @@ class NoteSearchBarComponent extends React.Component {
 			opacity: isEnabled ? 1.0 : theme.disabledOpacity,
 		};
 
-		const icon = <i style={iconStyle} className={`fa ${iconName}`}></i>;
+		const icon = <i style={iconStyle} className={`fas ${iconName}`}></i>;
 
 		return (
 			<a href="#" style={searchButton} onClick={clickHandler}>
@@ -130,7 +130,7 @@ class NoteSearchBarComponent extends React.Component {
 		if (this.backgroundColor === undefined) {
 			this.backgroundColor = theme.backgroundColor;
 		}
-		let buttonEnabled = (this.backgroundColor === theme.backgroundColor);
+		const buttonEnabled = (this.backgroundColor === theme.backgroundColor);
 
 		const closeButton = this.buttonIconComponent('fa-times', this.closeButton_click, true);
 		const previousButton = this.buttonIconComponent('fa-chevron-up', this.previousButton_click, buttonEnabled);
@@ -148,6 +148,21 @@ class NoteSearchBarComponent extends React.Component {
 			</div>
 		) : null;
 
+		// Currently searching in the viewer does not support jumping between matches
+		// So we explicitly disable those commands when only the viewer is open (this is
+		// currently signaled by results count being set to -1, but once Ace editor is removed
+		// we can observe the visible panes directly).
+		// SEARCHHACK
+		// TODO: remove the props.resultCount check here and replace it by checking visible panes directly
+		const allowScrolling = this.props.resultCount !== -1;
+		// end SEARCHHACK
+
+		const viewerWarning = (
+			<div style={textStyle}>
+				{'Jumping between matches is not available in the viewer, please toggle the editor'}
+			</div>
+		);
+
 		return (
 			<div style={this.props.style}>
 				<div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
@@ -161,9 +176,10 @@ class NoteSearchBarComponent extends React.Component {
 						type="text"
 						style={{ width: 200, marginRight: 5, backgroundColor: this.backgroundColor, color: theme.color }}
 					/>
-					{nextButton}
-					{previousButton}
-					{matchesFoundString}
+					{allowScrolling ? nextButton : null}
+					{allowScrolling ? previousButton : null}
+					{allowScrolling ? matchesFoundString : null}
+					{!allowScrolling ? viewerWarning : null}
 				</div>
 			</div>
 		);

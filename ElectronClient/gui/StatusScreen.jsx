@@ -2,8 +2,8 @@ const React = require('react');
 const { connect } = require('react-redux');
 const Setting = require('lib/models/Setting.js');
 const { bridge } = require('electron').remote.require('./bridge');
-const { Header } = require('./Header.min.js');
-const { themeStyle } = require('../theme.js');
+const { Header } = require('./Header/Header.min.js');
+const { themeStyle } = require('lib/theme');
 const { _ } = require('lib/locale.js');
 const { ReportService } = require('lib/services/report.js');
 const fs = require('fs-extra');
@@ -47,6 +47,7 @@ class StatusScreenComponent extends React.Component {
 
 		const headerStyle = Object.assign({}, theme.headerStyle, { width: style.width });
 		const retryStyle = Object.assign({}, theme.urlStyle, { marginLeft: 5 });
+		const retryAllStyle = Object.assign({}, theme.urlStyle, { marginTop: 5, display: 'inline-block' });
 
 		const containerPadding = 10;
 
@@ -63,14 +64,22 @@ class StatusScreenComponent extends React.Component {
 			);
 		}
 
+		function renderSectionRetryAllHtml(key, retryAllHandler) {
+			return (
+				<a key={`retry_all_${key}`} href="#" onClick={retryAllHandler} style={retryAllStyle}>
+					{_('Retry All')}
+				</a>
+			);
+		}
+
 		const renderSectionHtml = (key, section) => {
-			let itemsHtml = [];
+			const itemsHtml = [];
 
 			itemsHtml.push(renderSectionTitleHtml(section.title, section.title));
 
-			for (let n in section.body) {
+			for (const n in section.body) {
 				if (!section.body.hasOwnProperty(n)) continue;
-				let item = section.body[n];
+				const item = section.body[n];
 				let text = '';
 
 				let retryLink = null;
@@ -102,14 +111,18 @@ class StatusScreenComponent extends React.Component {
 				);
 			}
 
+			if (section.canRetryAll) {
+				itemsHtml.push(renderSectionRetryAllHtml(section.title, section.retryAllHandler));
+			}
+
 			return <div key={key}>{itemsHtml}</div>;
 		};
 
 		function renderBodyHtml(report) {
-			let sectionsHtml = [];
+			const sectionsHtml = [];
 
 			for (let i = 0; i < report.length; i++) {
-				let section = report[i];
+				const section = report[i];
 				if (!section.body.length) continue;
 				sectionsHtml.push(renderSectionHtml(i, section));
 			}
@@ -117,7 +130,7 @@ class StatusScreenComponent extends React.Component {
 			return <div>{sectionsHtml}</div>;
 		}
 
-		let body = renderBodyHtml(this.state.report);
+		const body = renderBodyHtml(this.state.report);
 
 		return (
 			<div style={style}>

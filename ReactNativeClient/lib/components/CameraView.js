@@ -1,8 +1,8 @@
+import { RNCamera } from 'react-native-camera';
 const React = require('react');
 const Component = React.Component;
 const { connect } = require('react-redux');
 const { View, TouchableOpacity, Text, Dimensions } = require('react-native');
-import { RNCamera } from 'react-native-camera';
 const Icon = require('react-native-vector-icons/Ionicons').default;
 const { _ } = require('lib/locale.js');
 const { shim } = require('lib/shim');
@@ -107,10 +107,10 @@ class CameraView extends Component {
 	}
 
 	fitRectIntoBounds(rect, bounds) {
-		var rectRatio = rect.width / rect.height;
-		var boundsRatio = bounds.width / bounds.height;
+		const rectRatio = rect.width / rect.height;
+		const boundsRatio = bounds.width / bounds.height;
 
-		var newDimensions = {};
+		const newDimensions = {};
 
 		// Rect is more landscape than bounds - fit to width
 		if (rectRatio > boundsRatio) {

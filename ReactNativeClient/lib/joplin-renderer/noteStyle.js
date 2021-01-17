@@ -1,34 +1,42 @@
-module.exports = function(style, options) {
-	// https://necolas.github.io/normalize.css/
-	const normalizeCss = `
-		html{line-height:1.15;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}body{margin:0}
-		article,aside,footer,header,nav,section{display:block}h1{font-size:2em;margin:.67em 0}hr{box-sizing:content-box;height:0;overflow:visible}
-		pre{font-family:monospace,monospace;font-size:1em}a{background-color:transparent;-webkit-text-decoration-skip:objects}
-		b,strong{font-weight:bolder}small{font-size:80%}img{border-style:none}
-	`;
+function formatCssSize(v) {
+	if (typeof v === 'string') {
+		if (v.includes('px') || v.includes('em') || v.includes('%')) return v;
+	}
+	return `${v}px`;
+}
+
+module.exports = function(theme) {
+	theme = theme ? theme : {};
 
 	const fontFamily = '\'Avenir\', \'Arial\', sans-serif';
 
 	const css =
 		`
+		/* https://necolas.github.io/normalize.css/ */
+		html{line-height:1.15;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}body{margin:0}
+		article,aside,footer,header,nav,section{display:block}h1{font-size:2em;margin:.67em 0}hr{box-sizing:content-box;height:0;overflow:visible}
+		pre{font-family:monospace,monospace;font-size:1em}a{background-color:transparent;-webkit-text-decoration-skip:objects}
+		b,strong{font-weight:bolder}small{font-size:80%}img{border-style:none}
+
 		body {
-			font-size: ${style.htmlFontSize};
-			color: ${style.htmlColor};
+			font-size: ${theme.noteViewerFontSize};
+			color: ${theme.color};
 			word-wrap: break-word;
-			line-height: ${style.htmlLineHeight};
-			background-color: ${style.htmlBackgroundColor};
+			line-height: ${theme.lineHeight};
+			background-color: ${theme.backgroundColor};
 			font-family: ${fontFamily};
-			padding-bottom: ${options.paddingBottom};
+			padding-bottom: ${formatCssSize(theme.bodyPaddingBottom)};
+			padding-top: ${formatCssSize(theme.bodyPaddingTop)};
 		}
 		strong {
-			color: ${style.colorBright};
+			color: ${theme.colorBright};
 		}
 		kbd {
-			border: 1px solid ${style.htmlCodeBorderColor};
-			box-shadow: inset 0 -1px 0 ${style.htmlCodeBorderColor};
+			border: 1px solid ${theme.codeBorderColor};
+			box-shadow: inset 0 -1px 0 ${theme.codeBorderColor};
 			padding: 2px 4px;
 			border-radius: 3px;
-			background-color: ${style.htmlCodeBackgroundColor};
+			background-color: ${theme.codeBackgroundColor};
 		}
 		::-webkit-scrollbar {
 			width: 7px;
@@ -52,23 +60,20 @@ module.exports = function(style, options) {
 		}
 
 		/* Remove top padding and margin from first child so that top of rendered text is aligned to top of text editor text */
-		/* Disabled, because it also applies to non-direct descendants of #rendered-md and also not a very elegant solution */
-		
-		/*
-		#rendered-md h1:first-child,
-		#rendered-md h2:first-child,
-		#rendered-md h3:first-child,
-		#rendered-md h4:first-child,
-		#rendered-md ul:first-child,
-		#rendered-md ol:first-child,
-		#rendered-md table:first-child,
-		#rendered-md blockquote:first-child,
-		#rendered-md img:first-child,
-		#rendered-md p:first-child {
+
+		#rendered-md > h1:first-child,
+		#rendered-md > h2:first-child,
+		#rendered-md > h3:first-child,
+		#rendered-md > h4:first-child,
+		#rendered-md > ul:first-child,
+		#rendered-md > ol:first-child,
+		#rendered-md > table:first-child,
+		#rendered-md > blockquote:first-child,
+		#rendered-md > img:first-child,
+		#rendered-md > p:first-child {
 			margin-top: 0;
 			padding-top: 0;
 		}
-		*/
 		
 		p, h1, h2, h3, h4, h5, h6, ul, table {
 			margin-top: .6em;
@@ -80,7 +85,7 @@ module.exports = function(style, options) {
 		h1 {
 			font-size: 1.5em;
 			font-weight: bold;
-			border-bottom: 1px solid ${style.htmlDividerColor};
+			border-bottom: 1px solid ${theme.dividerColor};
 			padding-bottom: .3em;
 		}
 		h2 {
@@ -95,8 +100,18 @@ module.exports = function(style, options) {
 			font-size: 1em;
 			font-weight: bold;
 		}
+
+		.exported-note-title {
+			font-size: 2em;
+			font-weight: bold;
+			margin-bottom: 0.8em;
+			line-height: 1.5em;
+			padding-bottom: .35em;
+			border-bottom: 1px solid ${theme.dividerColor};
+		}
+
 		a {
-			color: ${style.htmlLinkColor};
+			color: ${theme.urlColor};
 		}
 		ul, ol {
 			padding-left: 0;
@@ -117,7 +132,7 @@ module.exports = function(style, options) {
 			width: 1.2em;
 			height: 1.4em;
 			margin-right: 0.4em;
-			background-color:  ${style.htmlLinkColor};
+			background-color:  ${theme.urlColor};
 		}
     /* These icons are obtained from the wonderful ForkAwesome project by copying the src svgs 
      * into the css classes below.
@@ -178,53 +193,69 @@ module.exports = function(style, options) {
       -webkit-mask-repeat: no-repeat;
 		}
 		blockquote {
-			border-left: 4px solid ${style.htmlCodeBorderColor};
+			border-left: 4px solid ${theme.codeBorderColor};
 			padding-left: 1.2em;
 			margin-left: 0;
 			opacity: .7;
 		}
+
+		.jop-tinymce table,
 		table {
-			text-align: left-align;
+			text-align: left;
 			border-collapse: collapse;
-			border: 1px solid ${style.htmlCodeBorderColor};
-			background-color: ${style.htmlBackgroundColor};
+			border: 1px solid ${theme.codeBorderColor};
+			background-color: ${theme.backgroundColor};
 		}
-		td, th {
+
+		.jop-tinymce table td, .jop-tinymce table th,
+		table td, th {
+			text-align: left;
 			padding: .5em 1em .5em 1em;
-			font-size: ${style.htmlFontSize};
-			color: ${style.htmlColor};
+			font-size: ${theme.noteViewerFontSize};
+			color: ${theme.color};
 			font-family: ${fontFamily};
 		}
-		td {
-			border: 1px solid ${style.htmlCodeBorderColor};
+
+		.jop-tinymce table td,
+		table td {
+			border: 1px solid ${theme.codeBorderColor};
 		}
-		th {
-			border: 1px solid ${style.htmlCodeBorderColor};
-			border-bottom: 2px solid ${style.htmlCodeBorderColor};
-			background-color: ${style.htmlTableBackgroundColor};
+
+		.jop-tinymce table th,
+		table th {
+			border: 1px solid ${theme.codeBorderColor};
+			border-bottom: 2px solid ${theme.codeBorderColor};
+			background-color: ${theme.tableBackgroundColor};
 		}
-		tr:nth-child(even) {
-			background-color: ${style.htmlTableBackgroundColor};
+
+		.jop-tinymce table tr:nth-child(even),
+		table tr:nth-child(even) {
+			background-color: ${theme.tableBackgroundColor};
 		}
-		tr:hover {
-			background-color: ${style.raisedBackgroundColor};
+
+		.jop-tinymce table tr:hover,
+		table tr:hover {
+			background-color: ${theme.raisedBackgroundColor};
 		}
+
 		hr {
 			border: none;
-			border-bottom: 2px solid ${style.htmlDividerColor};
+			border-bottom: 2px solid ${theme.dividerColor};
 		}
 		img {
 			max-width: 100%;
 			height: auto;
 		}
-		.inline-code {
-			border: 1px solid ${style.htmlCodeBorderColor};
-			background-color: ${style.htmlCodeBackgroundColor};
+		
+		.inline-code,
+		.mce-content-body code {
+			border: 1px solid ${theme.codeBorderColor};
+			background-color: ${theme.codeBackgroundColor};
 			padding-right: .2em;
 			padding-left: .2em;
 			border-radius: .25em;
-			color: ${style.htmlCodeColor};
-			font-size: ${style.htmlCodeFontSize};
+			color: ${theme.codeColor};
+			font-size: ${theme.codeFontSize};
 		}
 
 		.highlighted-keyword {
@@ -259,15 +290,58 @@ module.exports = function(style, options) {
 			opacity: 0.5;
 		}
 
-		.exported-note-title {
-			font-size: 2.2em;
-			font-weight: bold;
-			margin-bottom: 1em;
-		}
-
 		.exported-note {
 			padding: 1em;
 		}
+
+		.joplin-editable .joplin-source {
+			display: none;
+		}
+
+		/* =============================================== */
+		/* For TinyMCE */
+		/* =============================================== */
+
+		.mce-content-body {
+			/* Note: we give a bit more padding at the bottom, to allow scrolling past the end of the document */
+			padding: 5px 10px 10em 10px;
+		}
+
+		/*
+		.mce-content-body code {
+			background-color: transparent;
+		}
+		*/
+
+		.mce-content-body [data-mce-selected=inline-boundary] {
+			background-color: transparent;
+		}
+
+		.mce-content-body .joplin-editable {
+			cursor: pointer !important;
+		}
+
+		.mce-content-body.mce-content-readonly {
+			opacity: 0.5;
+		}
+
+		/* We need that to make sure click events have the A has a target */
+		.katex a span {
+			pointer-events: none;
+		}
+
+		/* Clear the CODE style if the element is within a joplin-editable block */
+		.mce-content-body .joplin-editable code {
+			border: none;
+			background: none;
+			padding: 0;
+			color: inherit;
+			font-size: inherit;
+		}
+
+		/* =============================================== */
+		/* For TinyMCE */
+		/* =============================================== */
 
 		@media print {
 			body {
@@ -292,5 +366,5 @@ module.exports = function(style, options) {
 		}
 	`;
 
-	return [normalizeCss, css];
+	return [css];
 };

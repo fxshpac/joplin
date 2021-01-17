@@ -1,6 +1,6 @@
 const React = require('react');
 const { _ } = require('lib/locale.js');
-const { themeStyle } = require('../theme.js');
+const { themeStyle } = require('lib/theme');
 const { time } = require('lib/time-utils.js');
 const Datetime = require('react-datetime');
 const CreatableSelect = require('react-select/lib/Creatable').default;
@@ -117,10 +117,11 @@ class PromptDialog extends React.Component {
 					fontFamily: theme.fontFamily,
 					backgroundColor: theme.backgroundColor,
 				}),
-			option: provided =>
+			option: (provided, state) =>
 				Object.assign(provided, {
 					color: theme.color,
 					fontFamily: theme.fontFamily,
+					paddingLeft: `${10 + (state.data.indentDepth || 0) * 20}px`,
 				}),
 			multiValueLabel: provided =>
 				Object.assign(provided, {
@@ -230,24 +231,27 @@ class PromptDialog extends React.Component {
 		}
 
 		const buttonComps = [];
-		if (buttonTypes.indexOf('ok') >= 0)
+		if (buttonTypes.indexOf('ok') >= 0) {
 			buttonComps.push(
-				<button key="ok" style={styles.button} onClick={() => onClose(true, 'ok')}>
+				<button key="ok" disabled={!this.state.answer} style={styles.button} onClick={() => onClose(true, 'ok')}>
 					{_('OK')}
 				</button>
 			);
-		if (buttonTypes.indexOf('cancel') >= 0)
+		}
+		if (buttonTypes.indexOf('cancel') >= 0) {
 			buttonComps.push(
 				<button key="cancel" style={styles.button} onClick={() => onClose(false, 'cancel')}>
 					{_('Cancel')}
 				</button>
 			);
-		if (buttonTypes.indexOf('clear') >= 0)
+		}
+		if (buttonTypes.indexOf('clear') >= 0) {
 			buttonComps.push(
 				<button key="clear" style={styles.button} onClick={() => onClose(false, 'clear')}>
 					{_('Clear')}
 				</button>
 			);
+		}
 
 		return (
 			<div style={styles.modalLayer}>
